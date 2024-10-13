@@ -1,31 +1,60 @@
 <!DOCTYPE html>
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
 
 
-<title>PA#1</title>
-<style>
-    body {
-        background-color: #EEEEEE;
-    }
-</style>
+    <title>PA#1</title>
+    <link rel="stylesheet" href="./style.css" />
 
-<script src="./Utils/trackball-rotator.js"></script>
-<script src="./Utils/m4.js"></script>
-<script src="./shader.gpu"></script>
-<script src="./main.js"></script>
+    <script src="./Utils/trackball-rotator.js"></script>
+    <script src="./Utils/m4.js"></script>
+    <script src="./shader.gpu"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="./Surface.js"></script>
+    <script src="./main.js"></script>
+    <script src="./ui.js"></script>
 
 </head>
+
 <body onload="init()">
 
-<h2>A Cube with "Trackball" Mouse Rotation</h2>
+    <h1>Practical assignment #1 (Surface Rendering)</h1>
 
-<p id="message">Drag your mouse on the cube to rotate it.<br>
-(On a touch screen, you can use your finger.)</p>
+    <p id="message">Author: Demyd Demydovych, TR-42mp<br>
+        Surface: Parabolic Humming-Top</p>
+
+    <div class="surface-parameters">
+        <div class="input-block">
+            <p>Surface parameters</p>
+            <div class="inputWithLabel">
+                <label for="h">h</label>
+                <input type="number" id="h" value="0">
+            </div>
+            <div class="inputWithLabel">
+                <label for="p">p</label>
+                <input type="number" id="p" value="0">
+            </div>
+        </div>
+        <div class="input-block">
+            <p>Segments</p>
+            <div class="inputWithLabel">
+                <label for="uSegments">U</label>
+                <input type="number" id="uSegments" value="0">
+            </div>
+            <div class="inputWithLabel">
+                <label for="vSegments">V</label>
+                <input type="number" id="vSegments" value="0">
+            </div>
+        </div>
+    </div>
+
+    <div id="canvas-holder">
+        <canvas width="1200" height="700" id="webglcanvas" style="background-color:red"></canvas>
+    </div>
 
 
-<div id="canvas-holder">
-   <canvas width="600" height="600" id="webglcanvas" style="background-color:red"></canvas>
-</div>
+</body>
 
-
-</body></html>
+</html>
