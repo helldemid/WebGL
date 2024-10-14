@@ -8,34 +8,6 @@ let spaceball;                  // A SimpleRotator object that lets the user rot
 
 var zoomLevel = 10.0; // Стартовий зум (відстань до об'єкта)
 
-var surfaceModel = new SurfaceModel(1, 1, 25, 35)
-surfaceModel.generateVertices()
-
-
-// Constructor
-function Model(name) {
-    this.name = name;
-    this.iVertexBuffer = gl.createBuffer();
-    this.count = 0;
-
-    this.BufferData = function (vertices) {
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STREAM_DRAW);
-
-        this.count = vertices.length / 3;
-    }
-
-    this.Draw = function () {
-
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
-        gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
-        gl.enableVertexAttribArray(shProgram.iAttribVertex);
-
-        gl.drawArrays(gl.LINE_STRIP, 0, this.count);
-    }
-}
-
 
 // Constructor
 function ShaderProgram(name, program) {
@@ -86,7 +58,7 @@ function draw() {
     /* Draw the six faces of a cube, with different colors. */
     gl.uniform4fv(shProgram.iColor, [1, 1, 0, 1]);
 
-    surface.Draw();
+    surface.draw(gl, shProgram);
 }
 
 
@@ -101,10 +73,10 @@ function initGL() {
     shProgram.iModelViewProjectionMatrix = gl.getUniformLocation(prog, "ModelViewProjectionMatrix");
     shProgram.iColor = gl.getUniformLocation(prog, "color");
 
-    // Створюємо модель поверхні для Parabolic Humming-Top
-    surface = new Model('Parabolic Humming-Top');
-
-    surface.BufferData(surfaceModel.getVertices());
+    // create surface model
+    surface = new SurfaceModel('Parabolic Humming-Top', 1, 1, 25, 35)
+    surface.generateVertices()
+    surface.initBuffer(gl);
 
     gl.enable(gl.DEPTH_TEST);
 }
@@ -162,6 +134,10 @@ function init() {
     }
     try {
         initGL();  // initialize the WebGL graphics context
+        $('#p').val(surface.getP());
+        $('#h').val(surface.getH());
+        $('#uSegments').val(surface.getUSegmentsNumber());
+        $('#vSegments').val(surface.getVSegmentsNumber());
     }
     catch (e) {
         document.getElementById("canvas-holder").innerHTML =

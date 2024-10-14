@@ -1,5 +1,6 @@
 class SurfaceModel {
-    constructor(p, h, uSegments, vSegments) {
+    constructor(name, p, h, uSegments, vSegments) {
+        this.name = name;
         this.p = p;
         this.h = h;
         this.uSegments = uSegments;
@@ -35,6 +36,29 @@ class SurfaceModel {
                 this.vertexList.push(x, y, z);
             }
         }
+    }
+
+    initBuffer(gl) {
+        const vertices = this.getVertices();
+
+        this.vertexBuffer = gl.createBuffer();
+
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+
+        this.count = vertices.length / 3;
+    }
+
+    //This method is responsible for drawing the model using the previously initialized vertex buffer.
+    draw(gl, shProgram) {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+
+        gl.vertexAttribPointer(shProgram.vertexAttrib, 3, gl.FLOAT, false, 0, 0);
+
+        gl.enableVertexAttribArray(shProgram.vertexAttrib);
+
+        gl.drawArrays(gl.LINE_STRIP, 0, this.count);
     }
 
     setH(h) {

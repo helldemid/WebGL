@@ -16,17 +16,12 @@ $(document).ready(function () {
         draw(); // update the render after changing the zoom
     });
 
-    $('#p').val(surfaceModel.getP());
-    $('#h').val(surfaceModel.getH());
-    $('#uSegments').val(surfaceModel.getUSegmentsNumber());
-    $('#vSegments').val(surfaceModel.getVSegmentsNumber());
-
     $('#p').on('change', function () {
         const newP = parseFloat($(this).val());
 
-        newP <= 0 ? $(this).val(1) : surfaceModel.setP(newP);
+        newP <= 0 ? $(this).val(1) : surface.setP(newP);
 
-        surface.BufferData(surfaceModel.getVertices());
+        surface.initBuffer(gl);
         draw();
 
     });
@@ -34,27 +29,27 @@ $(document).ready(function () {
     $('#h').on('change', function () {
         const newH = parseFloat($(this).val());
 
-        newH <= 0 ? $(this).val(1) : surfaceModel.setH(newH);
+        newH <= 0 ? $(this).val(1) : surface.setH(newH);
 
-        surface.BufferData(surfaceModel.getVertices());
+        surface.initBuffer(gl);
         draw();
     });
 
     $('#uSegments').on('change', function () {
         const newUSegments = parseFloat($(this).val());
 
-        newUSegments <= 0 ? $(this).val(1) : surfaceModel.setUSegmentsNumber(newUSegments);
+        newUSegments <= 0 ? $(this).val(1) : surface.setUSegmentsNumber(newUSegments);
 
-        surface.BufferData(surfaceModel.getVertices());
+        surface.initBuffer(gl);
         draw();
     });
 
     $('#vSegments').on('change', function () {
         const newVSegments = parseFloat($(this).val());
 
-        newVSegments <= 0 ? $(this).val(1) : surfaceModel.setVSegmentsNumber(newVSegments);
+        newVSegments <= 0 ? $(this).val(1) : surface.setVSegmentsNumber(newVSegments);
 
-        surface.BufferData(surfaceModel.getVertices());
+        surface.initBuffer(gl);
         draw();
     });
 });
