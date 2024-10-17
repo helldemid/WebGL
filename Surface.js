@@ -1,41 +1,52 @@
 class SurfaceModel {
-    constructor(name, p, h, uSegments, vSegments) {
+    constructor(name, p, h, uSegmentsNumber, vSegmentsNumber) {
         this.name = name;
         this.p = p;
         this.h = h;
-        this.uSegments = uSegments;
-        this.vSegments = vSegments;
+        this.uSegmentsNumber = uSegmentsNumber;
+        this.vSegmentsNumber = vSegmentsNumber;
+        this.uSegments = [];
+        this.vSegments = [];
         this.vertexList = [];
     }
 
     // A method for generating vertex data
     generateVertices() {
         this.vertexList = [];
+        this.uSegments = [];
+        this.vSegments = [];
         let vMax = 2 * Math.PI; // Maximum value of v (360 degrees)
 
         // U-polylines generation
-        for (let i = 0; i <= this.uSegments; i++) {
-            let z = -this.h + (i / this.uSegments) * (2 * this.h); // change z from -h to h
-            for (let j = 0; j <= this.vSegments; j++) {
-                let v = (j / this.vSegments) * vMax; // angle v
+        for (let i = 0; i < this.uSegmentsNumber; i++) {
+            let z = -this.h + (i / this.uSegmentsNumber) * (2 * this.h); // change z from -h to h
+            const uSegment = [];
+            for (let j = 0; j <= this.vSegmentsNumber; j++) {
+                let v = (j / this.vSegmentsNumber) * vMax; // angle v
                 // Parabolic Humming-Top equation
                 let x = (((Math.abs(z) - this.h) ** 2) / (2 * this.p)) * Math.cos(v);
                 let y = (((Math.abs(z) - this.h) ** 2) / (2 * this.p)) * Math.sin(v);
+                uSegment.push([x, y, z]);
                 this.vertexList.push(x, y, z);
             }
+            this.uSegments.push(uSegment);
         }
 
         // V-polylines generation
-        for (let j = 0; j <= this.vSegments; j++) {
-            let v = (j / this.vSegments) * vMax; // angle v
-            for (let i = 0; i <= this.uSegments; i++) {
-                let z = -this.h + (i / this.uSegments) * (2 * this.h); // change z from -h to h
+        for (let j = 0; j < this.vSegmentsNumber; j++) {
+            let v = (j / this.vSegmentsNumber) * vMax; // angle v
+            const vSegment = [];
+            for (let i = 0; i <= this.uSegmentsNumber; i++) {
+                let z = -this.h + (i / this.uSegmentsNumber) * (2 * this.h); // change z from -h to h
                 // Parabolic Humming-Top equation
                 let x = (((Math.abs(z) - this.h) ** 2) / (2 * this.p)) * Math.cos(v);
                 let y = (((Math.abs(z) - this.h) ** 2) / (2 * this.p)) * Math.sin(v);
+                vSegment.push([x, y, z]);
                 this.vertexList.push(x, y, z);
             }
+            this.vSegments.push(vSegment);
         }
+
     }
 
     initBuffer(gl) {
@@ -46,8 +57,6 @@ class SurfaceModel {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-
-        this.count = vertices.length / 3;
     }
 
     //This method is responsible for drawing the model using the previously initialized vertex buffer.
@@ -58,7 +67,21 @@ class SurfaceModel {
 
         gl.enableVertexAttribArray(shProgram.vertexAttrib);
 
-        gl.drawArrays(gl.LINE_STRIP, 0, this.count);
+        const USegmentVerticesNumber = this.vSegmentsNumber + 1;
+        const VSegmentVerticesNumber = this.uSegmentsNumber + 1;
+        const shiftToVLines = this.uSegments.length * USegmentVerticesNumber;
+
+        // draw U-polylines
+        for (let i = 0; i < this.uSegments.length; i++) {
+            let shift = i * USegmentVerticesNumber;
+            gl.drawArrays(gl.LINE_STRIP, shift, USegmentVerticesNumber);
+        }
+
+        // draw V-polylines
+        for (let i = 0; i < this.vSegments.length; i++) {
+            let shift = i * VSegmentVerticesNumber;
+            gl.drawArrays(gl.LINE_STRIP, shiftToVLines + shift, VSegmentVerticesNumber);
+        }
     }
 
     setH(h) {
@@ -77,18 +100,19 @@ class SurfaceModel {
         }
     }
 
-    setUSegmentsNumber(uSegments) {
-        uSegments = parseFloat(uSegments);
-        if (uSegments >= 0) {
-            this.uSegments = uSegments;
+    setUSegmentsNumber(uSegmentsNumber) {
+        uSegmentsNumber = parseInt(uSegmentsNumber);
+        if (uSegmentsNumber >= 0) {
+            this.uSegmentsNumber = uSegmentsNumber;
             this.generateVertices();
         }
     }
 
-    setVSegmentsNumber(vSegments) {
-        vSegments = parseFloat(vSegments);
-        if (vSegments >= 0) {
-            this.vSegments = vSegments;
+    setVSegmentsNumber(vSegmentsNumber) {
+        vSegmentsNumber = parseInt(vSegmentsNumber);
+        console.log(vSegmentsNumber)
+        if (vSegmentsNumber >= 0) {
+            this.vSegmentsNumber = vSegmentsNumber;
             this.generateVertices();
         }
     }
@@ -104,9 +128,9 @@ class SurfaceModel {
         return this.h;
     }
     getUSegmentsNumber() {
-        return this.uSegments;
+        return this.uSegmentsNumber;
     }
     getVSegmentsNumber() {
-        return this.vSegments;
+        return this.vSegmentsNumber;
     }
 }
