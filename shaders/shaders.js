@@ -1,48 +1,66 @@
 const vertexShaderSource = `
-    attribute vec3 vertex;
-    attribute vec3 normal;
-    uniform mat4 matrix;
-    uniform mat4 normalMatrix;
-    uniform vec3 lightDirection;
-    uniform vec3 viewPosition;
-    uniform vec3 ambientColor;
-    uniform vec3 diffuseColor;
-    uniform vec3 specularColor;
-    uniform float shininess;
+attribute vec3 vertex;        // Координаты вершины
+attribute vec3 normal;        // Нормаль вершины
+attribute vec2 texCoord;      // Текстурные координаты
 
-    varying vec3 vColor;  // Передаем цвет, вычисленный в вершине
-    varying vec3 vPosition;  // Позиция вершин
-    varying vec3 vNormal;  // Нормаль вершин
+uniform mat4 matrix;          // Матрица преобразования
+uniform mat4 normalMatrix;    // Матрица для нормалей
 
-    void main() {
-        vec4 position = matrix * vec4(vertex, 1.0);
-        gl_Position = position;
-        vPosition = position.xyz;  // Передаем позицию в фрагментный шейдер
-        vNormal = normalize((normalMatrix * vec4(normal, 0.0)).xyz);  // Передаем нормаль в фрагментный шейдер
+varying vec3 vColor;          // Итоговый цвет
+varying vec2 vTexCoord;       // Текстурные координаты
 
-        // Вычисляем освещенность (ambient, diffuse, specular)
-        vec3 lightDir = normalize(lightDirection - vPosition);
-        vec3 viewDir = normalize(viewPosition - vPosition);
+uniform vec3 lightDirection;  // Направление источника света
+uniform vec3 viewPosition;    // Позиция камеры
+uniform vec3 ambientColor;    // Цвет амбиентного освещения
+uniform vec3 diffuseColor;    // Цвет диффузного освещения
+uniform vec3 specularColor;   // Цвет зеркального освещения
+uniform float shininess;      // Степень блеска
 
-        vec3 ambient = ambientColor;
-        float diff = max(dot(vNormal, lightDir), 0.0);
-        vec3 diffuse = diff * diffuseColor;
+void main() {
+    // Преобразование вершины
+    vec4 position = matrix * vec4(vertex, 1.0);
+    gl_Position = position;
+    vTexCoord = texCoord;
 
-        vec3 reflectDir = reflect(-lightDir, vNormal);
-        float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-        vec3 specular = spec * specularColor;
+    // Преобразование нормали
+    vec3 N = normalize((normalMatrix * vec4(normal, 0.0)).xyz);
 
-        vColor = ambient + diffuse + specular;  // Передаем вычисленный цвет в фрагментный шейдер
+    // Вычисление освещения
+    vec3 lightDir = normalize(lightDirection);
+    vec3 viewDir = normalize(viewPosition - position.xyz);
+
+    // Ambient
+    vec3 ambient = ambientColor;
+
+    // Diffuse
+    float diff = max(dot(N, lightDir), 0.0);
+    vec3 diffuse = diff * diffuseColor;
+
+    // Specular
+    vec3 reflectDir = reflect(-lightDir, N);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    vec3 specular = spec * specularColor;
+
+    // Итоговый цвет
+    vColor = ambient + diffuse + specular;
 }
 
 `;
 
 const fragmentShaderSource = `
-    precision mediump float;
+precision mediump float;
 
-    varying vec3 vColor;  // Получаем цвет из вершинного шейдера
+varying vec3 vColor;      // Интерполированный цвет из вершинного шейдера
+varying vec2 vTexCoord;   // Текстурные координаты
 
-    void main() {
-        gl_FragColor = vec4(vColor, 1.0);  // Применяем полученный цвет к фрагменту
+uniform sampler2D diffuseTexture;  // Текстура диффузного освещения
+
+void main() {
+    // Модификация итогового цвета с использованием текстуры
+    vec3 textureColor = texture2D(diffuseTexture, vTexCoord).rgb;
+    vec3 finalColor = vColor * textureColor; // Комбинируем цвет освещения и текстуры
+
+    gl_FragColor = vec4(finalColor, 1.0);
 }
+
 `;

@@ -10,9 +10,9 @@ function initGL() {
 	shProgram.use(gl);
 
 	// create surface model
-	surface = new SurfaceModel("Parabolic Humming-Top", 1, 1, 65, 65);
-	surface.updateSurfaceData();
+	surface = new Surface("Parabolic Humming-Top", 1, 1, 65, 65);
 	surface.initBuffer(gl);
+	surface.createTextures(gl);
 
 	gl.enable(gl.DEPTH_TEST);
 }
@@ -40,36 +40,35 @@ function animateLight(time) {
 }
 
 
-
 function draw() {
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+	gl.clearColor(0, 0, 0, 1);
+	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    const projection = m4.perspective(Math.PI / 8, 1, 0.1, 100);
-    const modelView = spaceball.getViewMatrix();
+	const projection = m4.perspective(Math.PI / 8, 1, 0.1, 100);
+	const modelView = spaceball.getViewMatrix();
 
-    const rotateToPointZero = m4.axisRotation([Math.SQRT1_2, Math.SQRT1_2, 0], 0.7);
-    const translateToPointZero = m4.translation(0, 0, -10);
+	const rotateToPointZero = m4.axisRotation([Math.SQRT1_2, Math.SQRT1_2, 0], 0.7);
+	const translateToPointZero = m4.translation(0, 0, -10);
 
-    const matAcc0 = m4.multiply(rotateToPointZero, modelView);
-    const matAcc1 = m4.multiply(translateToPointZero, matAcc0);
+	const matAcc0 = m4.multiply(rotateToPointZero, modelView);
+	const matAcc1 = m4.multiply(translateToPointZero, matAcc0);
 
-    const modelViewProjection = m4.multiply(projection, matAcc1);
-    gl.uniformMatrix4fv(shProgram.matrixUni, false, modelViewProjection);
+	const modelViewProjection = m4.multiply(projection, matAcc1);
+	gl.uniformMatrix4fv(shProgram.matrixUni, false, modelViewProjection);
 
-    const normalMatrix = m4.transpose(m4.inverse(matAcc1));
-    gl.uniformMatrix4fv(shProgram.normalMatrixUni, false, normalMatrix);
+	const normalMatrix = m4.transpose(m4.inverse(matAcc1));
+	gl.uniformMatrix4fv(shProgram.normalMatrixUni, false, normalMatrix);
 
     gl.uniform3fv(shProgram.viewPositionUni, [0.0, 0.0, 5.0]);
     gl.uniform3f(shProgram.ambientColorUni, 0.05, 0.05, 0.05);
-    gl.uniform3f(shProgram.diffuseColorUni, 0.8, 0.1, 0.1);
+	gl.uniform3f(shProgram.diffuseColorUni, 0.8, 0.8, 0.8); // Белый свет
+
     gl.uniform3f(shProgram.specularColorUni, 1.0, 1.0, 1.0);
     gl.uniform1f(shProgram.shininessUni, 10.0);
 
-    surface.draw(gl, shProgram); 
+	surface.initTextures(gl, shProgram);
+	surface.draw(gl, shProgram);
 }
-
-
 
 /**
  * initialization function that will be called when the page has loaded
@@ -85,6 +84,7 @@ function init() {
 		$('#p').val(surface.getP());
         $('#h').val(surface.getH());
 	} catch (e) {
+		console.error('Someting went wrong' + e)
         $("#canvas-holder").html(
             `<p>Sorry, something went wrong: ${e}</p>`
         )

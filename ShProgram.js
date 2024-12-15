@@ -12,6 +12,8 @@ class ShProgram {
 	setupAttributes(gl) {
 		this.vertexAttrib = gl.getAttribLocation(this.prog, "vertex");
 		this.normalAttrib = gl.getAttribLocation(this.prog, "normal");
+		this.texCoordAttrib = gl.getAttribLocation(this.prog, "texCoord");
+		this.tangentAttrib = gl.getAttribLocation(this.prog, "tangent");
 	}
 
 	setupUniforms(gl) {
@@ -23,34 +25,38 @@ class ShProgram {
 		this.diffuseColorUni = gl.getUniformLocation(this.prog, "diffuseColor");
 		this.specularColorUni = gl.getUniformLocation(this.prog, "specularColor");
 		this.shininessUni = gl.getUniformLocation(this.prog, "shininess");
+		this.diffuseTextureUni = gl.getUniformLocation(this.prog, "diffuseTexture");
+		this.specularTextureUni = gl.getUniformLocation(this.prog,"specularTexture",);
+		this.normalTextureUni = gl.getUniformLocation(this.prog, "normalTexture");
 	}
 
 	init(gl, vs, fs) {
-		const vsh = this.compileShader(gl, gl.VERTEX_SHADER, vs);
-		const fsh = this.compileShader(gl, gl.FRAGMENT_SHADER, fs);
-		this.prog = this.createProgram(gl, vsh, fsh);
+		const vsh = this.loadShader(gl, gl.VERTEX_SHADER, vs);
+		const fsh = this.loadShader(gl, gl.FRAGMENT_SHADER, fs);
+		this.prog = gl.createProgram();
+		
+		gl.attachShader(this.prog, vsh);
+		gl.attachShader(this.prog, fsh);
+		gl.linkProgram(this.prog);
+
+		if (!gl.getProgramParameter(this.prog, gl.LINK_STATUS)) {
+			throw new Error(
+				`Unable to initialize the shader program: ${gl.getProgramInfoLog(this.prog)}`,
+			);
+		}
 	}
 
-	compileShader(gl, type, source) {
+	loadShader(gl, type, source) {
 		const shader = gl.createShader(type);
 		gl.shaderSource(shader, source);
 		gl.compileShader(shader);
+
 		if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
 			throw new Error(
-				`Shader compilation error: ${gl.getShaderInfoLog(shader)}`,
+				`An error occurred compiling the shaders: ${gl.getShaderInfoLog(shader)}`,
 			);
 		}
-		return shader;
-	}
 
-	createProgram(gl, vsh, fsh) {
-		const prog = gl.createProgram();
-		gl.attachShader(prog, vsh);
-		gl.attachShader(prog, fsh);
-		gl.linkProgram(prog);
-		if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-			throw new Error(`Program link error: ${gl.getProgramInfoLog(prog)}`);
-		}
-		return prog;
+		return shader;
 	}
 }

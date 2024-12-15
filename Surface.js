@@ -1,4 +1,4 @@
-class SurfaceModel {
+class Surface {
 	constructor(name, p, h, uSegmentsNumber, vSegmentsNumber) {
 		this.name = name; // Surface name
 		this.p = p; // Paraboloid parameter
@@ -10,7 +10,14 @@ class SurfaceModel {
 		this.vertexList = []; // List of vertex positions
 		this.normalsList = []; // List of normals for vertices
 		this.indicesList = []; // List of indices for drawing triangles
-		this.updateSurfaceData()
+		this.tangentsList = [];
+		this.textures = {
+			diffuse: '',
+			normal: '',
+			specular: ''
+		}
+		this.texturesCoordinates = [];
+		this.updateSurfaceData();
 	}
 
 	// Generates the vertex data for the surface
@@ -152,6 +159,87 @@ class SurfaceModel {
 		this.generateVertices();
 		this.generateIndicesList();
 		this.generateNormalsList();
+		this.generateTangentsList();
+		this.generateTexturesCoordinates();
+	}
+
+	// Generates texture coordinates for each vertex
+	generateTexturesCoordinates() {
+		this.texturesCoordinates = [];
+		for (let i = 0; i <= this.uSegmentsNumber; i++) {
+			for (let j = 0; j <= this.vSegmentsNumber; j++) {
+				const u = i / this.uSegmentsNumber;
+				const v = j / this.vSegmentsNumber;
+				this.texturesCoordinates.push(u, v);
+			}
+		}
+	}
+
+	// Generates tangents for each vertex
+	generateTangentsList() {
+		this.tangentsList = [];
+		// for (let i = 0; i < this.indicesList.length; i += 3) {
+		// 	const idx1 = this.indicesList[i];
+		// 	const idx2 = this.indicesList[i + 1];
+		// 	const idx3 = this.indicesList[i + 2];
+
+		// 	// Вершины
+		// 	const v0 = this.vertexList[idx1];
+		// 	const v1 = this.vertexList[idx2];
+		// 	const v2 = this.vertexList[idx3];
+
+		// 	// Текстурные координаты
+		// 	const uv0 = this.texturesCoordinates.slice(idx1 * 2, idx1 * 2 + 2);
+		// 	const uv1 = this.texturesCoordinates.slice(idx2 * 2, idx2 * 2 + 2);
+		// 	const uv2 = this.texturesCoordinates.slice(idx3 * 2, idx3 * 2 + 2);
+
+		// 	// Рёбра
+		// 	const edge1 = [v1[0] - v0[0], v1[1] - v0[1], v1[2] - v0[2]];
+		// 	const edge2 = [v2[0] - v0[0], v2[1] - v0[1], v2[2] - v0[2]];
+
+		// 	// Разности текстурных координат
+		// 	const deltaUV1 = [uv1[0] - uv0[0], uv1[1] - uv0[1]];
+		// 	const deltaUV2 = [uv2[0] - uv0[0], uv2[1] - uv0[1]];
+
+		// 	// Делаем пересчёт тангента
+		// 	const f = 1.0 / (deltaUV1[0] * deltaUV2[1] - deltaUV1[1] * deltaUV2[0]);
+		// 	const tangent = [
+		// 		f * (deltaUV2[1] * edge1[0] - deltaUV1[1] * edge2[0]),
+		// 		f * (deltaUV2[1] * edge1[1] - deltaUV1[1] * edge2[1]),
+		// 		f * (deltaUV2[1] * edge1[2] - deltaUV1[1] * edge2[2])
+		// 	];
+
+		// 	// Добавляем тангенты
+		// 	this.tangentsList.push(tangent, tangent, tangent);
+		// }
+		const totalSegments = (this.uSegmentsNumber + 1) * (this.vSegmentsNumber + 1);
+		this.tangentsList = Array(totalSegments * 3).fill(0);
+		for (let i = 0; i < totalSegments; i++) {
+			this.tangentsList[i * 3] = 1; // Устанавливаем x-компонент
+		}
+	}
+
+	uploadTexture(gl, url) {
+		const texture = gl.createTexture();
+		gl.bindTexture(gl.TEXTURE_2D, texture);
+
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0, 255, 255, 255]));
+
+		const image = new Image();
+		image.onload = () => {
+			gl.bindTexture(gl.TEXTURE_2D, texture);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+			gl.generateMipmap(gl.TEXTURE_2D);
+		};
+		image.src = url;
+
+		return texture;
+	}
+
+	createTextures(gl) {
+		this.textures.diffuse = this.uploadTexture(gl, "textures/diffuse.png");
+		this.textures.specular = this.uploadTexture(gl, "textures/specular.png");
+		this.textures.normal = this.uploadTexture(gl, "textures/normal.png");
 	}
 
 	// Initializes buffers for rendering
@@ -160,24 +248,55 @@ class SurfaceModel {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.vertexList), gl.STATIC_DRAW);
 
+		this.indexBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indicesList), gl.STATIC_DRAW);
+
 		this.normalBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
 		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.normalsList), gl.STATIC_DRAW);
 
-		this.indexBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint16Array(this.indicesList), gl.STATIC_DRAW);
+		this.texCoordBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.texturesCoordinates), gl.STATIC_DRAW);
+
+		this.tangentBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.tangentBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(this.tangentsList), gl.STATIC_DRAW);
+	}
+
+	// Initializes textures for rendering
+	initTextures(gl, shProgram) {
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.textures.diffuse);
+		gl.uniform1i(shProgram.diffuseTextureUni, 0);
+
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, this.textures.specular);
+		gl.uniform1i(shProgram.specularTextureUni, 1);
+
+		gl.activeTexture(gl.TEXTURE2);
+		gl.bindTexture(gl.TEXTURE_2D, this.textures.normal);
+		gl.uniform1i(shProgram.normalTextureUni, 2);
 	}
 
 	// Renders the surface
-	draw(gl, program) {
+	draw(gl, shProgram) {
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-		gl.vertexAttribPointer(program.vertexAttrib, 3, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(program.vertexAttrib);
+		gl.vertexAttribPointer(shProgram.vertexAttrib, 3, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(shProgram.vertexAttrib);
 
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-		gl.vertexAttribPointer(program.normalAttrib, 3, gl.FLOAT, false, 0, 0);
-		gl.enableVertexAttribArray(program.normalAttrib);
+		gl.vertexAttribPointer(shProgram.normalAttrib, 3, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(shProgram.normalAttrib);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.texCoordBuffer);
+		gl.vertexAttribPointer(shProgram.texCoordAttrib, 2, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(shProgram.texCoordAttrib);
+
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.tangentBuffer);
+		gl.vertexAttribPointer(shProgram.tangentAttrib, 3, gl.FLOAT, false, 0, 0);
+		gl.enableVertexAttribArray(shProgram.tangentAttrib);
 
 		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 		gl.drawElements(gl.TRIANGLES, this.indicesList.length, gl.UNSIGNED_SHORT, 0);
